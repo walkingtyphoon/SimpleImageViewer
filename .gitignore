@@ -8,10 +8,16 @@ build/
 *.moved-aside
 *.xccheckout
 *.xcscmblueprint
+*.hmap
 
 # User-specific Xcode state
 xcuserdata/
 *.xcuserstate
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
 
 # Swift Package Manager
 .build/
@@ -20,3 +26,12 @@ Package.resolved
 # Playgrounds
 timeline.xctimeline
 playground.xcworkspace
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output

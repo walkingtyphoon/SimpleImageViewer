@@ -59,6 +59,42 @@ struct GalleryViewModelTests {
     }
 
     @Test
+    func openImageFileLoadsSiblingImagesAndOpensSelectedImage() throws {
+        let directory = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try Data().write(to: directory.appendingPathComponent("a.png"))
+        let selected = directory.appendingPathComponent("b.jpg")
+        try Data().write(to: selected)
+        try Data().write(to: directory.appendingPathComponent("notes.txt"))
+
+        let viewModel = GalleryViewModel(loader: ImageDirectoryLoader())
+        viewModel.openImageFile(selected)
+
+        #expect(viewModel.directoryURL == directory)
+        #expect(viewModel.images.map(\.name) == ["a.png", "b.jpg"])
+        #expect(viewModel.isViewerPresented)
+        #expect(viewModel.viewerState.currentImage?.name == "b.jpg")
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test
+    func openImageFileRejectsUnsupportedFile() throws {
+        let directory = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let document = directory.appendingPathComponent("notes.txt")
+        try Data().write(to: document)
+
+        let viewModel = GalleryViewModel(loader: ImageDirectoryLoader())
+        viewModel.openImageFile(document)
+
+        #expect(viewModel.images.isEmpty)
+        #expect(!viewModel.isViewerPresented)
+        #expect(viewModel.errorMessage != nil)
+    }
+
+    @Test
     func closeViewerDismissesPresentation() throws {
         let directory = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

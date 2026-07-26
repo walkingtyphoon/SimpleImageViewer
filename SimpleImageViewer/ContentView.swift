@@ -13,6 +13,9 @@ struct ContentView: View {
     var body: some View {
         GalleryView(viewModel: viewModel)
             .frame(minWidth: 720, minHeight: 520)
+            .onOpenURL { url in
+                viewModel.openImageFile(url)
+            }
     }
 }
 

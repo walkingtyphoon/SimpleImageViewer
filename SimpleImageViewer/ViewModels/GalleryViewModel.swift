@@ -1,8 +1,3 @@
-//
-//  GalleryViewModel.swift
-//  SimpleImageViewer
-//
-
 import Foundation
 import Observation
 
@@ -22,8 +17,8 @@ final class GalleryViewModel {
     private let deleter: any ImageDeleting
 
     init(
-        loader: any ImageLoading = ImageDirectoryLoader(),
-        deleter: any ImageDeleting = FileImageDeleter()
+        loader: any ImageLoading,
+        deleter: any ImageDeleting
     ) {
         self.loader = loader
         self.deleter = deleter
@@ -31,6 +26,15 @@ final class GalleryViewModel {
 
     func setErrorMessage(_ message: String?) {
         errorMessage = message
+    }
+
+    func presentViewer(at index: Int) {
+        viewerState = ImageViewerState(images: images, currentIndex: index)
+        isViewerPresented = true
+    }
+
+    func dismissViewer() {
+        isViewerPresented = false
     }
 
     func loadDirectory(_ url: URL) {
@@ -55,36 +59,6 @@ final class GalleryViewModel {
         }
     }
 
-    func openViewer(for image: ImageFile) {
-        guard let index = images.firstIndex(of: image) else { return }
-        viewerState = ImageViewerState(images: images, currentIndex: index)
-        isViewerPresented = true
-    }
-
-    func closeViewer() {
-        isViewerPresented = false
-    }
-
-    func goToNextImage() {
-        viewerState.goNext()
-    }
-
-    func goToPreviousImage() {
-        viewerState.goPrevious()
-    }
-
-    func rotateClockwise() {
-        viewerState.rotateClockwise()
-    }
-
-    func rotateCounterClockwise() {
-        viewerState.rotateCounterClockwise()
-    }
-
-    func handleSwipeEnd(translation: CGSize, threshold: CGFloat = ImageViewerState.defaultSwipeThreshold) {
-        viewerState.handleSwipeEnd(translation: translation, threshold: threshold)
-    }
-
     @discardableResult
     func deleteCurrentImage() -> Bool {
         guard let image = viewerState.currentImage else { return false }
@@ -105,16 +79,16 @@ final class GalleryViewModel {
         return true
     }
 
-    // MARK: - Private
-
     private func syncViewerWithGallery() {
         let previousID = viewerState.currentImage?.id
         var index = 0
-        if let previousID, let match = images.firstIndex(where: { $0.id == previousID }) {
+        if let previousID,
+           let match = images.firstIndex(where: { $0.id == previousID }) {
             index = match
         } else {
             index = min(viewerState.currentIndex, max(images.count - 1, 0))
         }
-        viewerState = ImageViewerState(images: images, currentIndex: images.isEmpty ? 0 : index)
+        let currentIndex = images.isEmpty ? 0 : index
+        viewerState = ImageViewerState(images: images, currentIndex: currentIndex)
     }
 }

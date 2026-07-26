@@ -1,10 +1,3 @@
-//
-//  GalleryView.swift
-//  SimpleImageViewer
-//
-
-import AppKit
-import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -12,7 +5,6 @@ struct GalleryView: View {
     @Bindable var viewModel: GalleryViewModel
     @State private var isImporterPresented = false
     @State private var securityScopedDirectory: URL?
-
     private let columns = [
         GridItem(.adaptive(minimum: AppTheme.galleryMinItem), spacing: AppTheme.gallerySpacing)
     ]
@@ -23,7 +15,12 @@ struct GalleryView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                header
+                GalleryHeader(
+                    subtitle: subtitle,
+                    showsOpenFolderButton: !viewModel.isEmpty
+                ) {
+                    isImporterPresented = true
+                }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
                     .padding(.bottom, 12)
@@ -46,60 +43,24 @@ struct GalleryView: View {
             handleFolderPick(result)
         }
     }
-
-    // MARK: - Sections
-
-    private var header: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Photos")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-
-                Text(subtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.secondaryLabel)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-
-            Spacer()
-
-            Button {
-                isImporterPresented = true
-            } label: {
-                Label("Open Folder", systemImage: "folder.badge.plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-            }
-            .buttonStyle(.plain)
-            .background {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        Capsule()
-                            .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
-                    }
-            }
-            .foregroundStyle(.white)
-        }
-    }
-
     @ViewBuilder
     private var content: some View {
         if let errorMessage = viewModel.errorMessage, viewModel.images.isEmpty {
-            emptyState(
+            EmptyGalleryState(
                 title: "Couldn't open folder",
                 message: errorMessage,
                 systemImage: "exclamationmark.triangle"
-            )
+            ) {
+                isImporterPresented = true
+            }
         } else if viewModel.isEmpty {
-            emptyState(
+            EmptyGalleryState(
                 title: "No images yet",
                 message: "Choose a folder to browse JPG, PNG, HEIC, and more.",
                 systemImage: "photo.on.rectangle.angled"
-            )
+            ) {
+                isImporterPresented = true
+            }
         } else {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: AppTheme.gallerySpacing) {
@@ -115,57 +76,6 @@ struct GalleryView: View {
             }
         }
     }
-
-    private func emptyState(title: String, message: String, systemImage: String) -> some View {
-        VStack(spacing: 18) {
-            Spacer()
-            Image(systemName: systemImage)
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(AppTheme.accent)
-                .padding(28)
-                .background {
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .overlay {
-                            Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-                        }
-                }
-
-            VStack(spacing: 8) {
-                Text(title)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text(message)
-                    .font(.system(size: 14))
-                    .foregroundStyle(AppTheme.secondaryLabel)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 360)
-            }
-
-            Button {
-                isImporterPresented = true
-            } label: {
-                Text("Choose Folder")
-                    .font(.system(size: 15, weight: .semibold))
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 12)
-                    .background {
-                        Capsule()
-                            .fill(AppTheme.accent.opacity(0.9))
-                    }
-                    .foregroundStyle(.white)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 6)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 24)
-    }
-
-    // MARK: - Helpers
-
     private var subtitle: String {
         if let directoryURL = viewModel.directoryURL {
             let count = viewModel.images.count
@@ -186,83 +96,5 @@ struct GalleryView: View {
         case .failure(let error):
             viewModel.setErrorMessage(error.localizedDescription)
         }
-    }
-}
-
-// MARK: - Thumbnail
-
-private struct GalleryThumbnail: View {
-    let image: ImageFile
-    let onTap: () -> Void
-
-    @State private var nsImage: NSImage?
-
-    var body: some View {
-        Button(action: onTap) {
-            ZStack {
-                GlassCardBackground()
-
-                if let nsImage {
-                    Image(nsImage: nsImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cardRadius, style: .continuous))
-                } else {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
-            .aspectRatio(1, contentMode: .fit)
-            .overlay(alignment: .bottom) {
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.55)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 48)
-                .clipShape(
-                    UnevenRoundedRectangle(
-                        bottomLeadingRadius: AppTheme.cardRadius,
-                        bottomTrailingRadius: AppTheme.cardRadius,
-                        style: .continuous
-                    )
-                )
-            }
-            .overlay(alignment: .bottomLeading) {
-                Text(image.name)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .lineLimit(1)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
-            }
-        }
-        .buttonStyle(.plain)
-        .task(id: image.id) {
-            nsImage = ThumbnailLoader.load(url: image.url, maxPixel: 360)
-        }
-    }
-}
-
-enum ThumbnailLoader {
-    static func load(url: URL, maxPixel: CGFloat) -> NSImage? {
-        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else {
-            return NSImage(contentsOf: url)
-        }
-
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
-            kCGImageSourceShouldCacheImmediately: true
-        ]
-
-        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
-            return NSImage(contentsOf: url)
-        }
-        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }
 }

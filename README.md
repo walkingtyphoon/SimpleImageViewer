@@ -28,7 +28,7 @@ The app currently recognizes these file extensions:
 
 ## Requirements
 
-- macOS 26.5 or later, based on the current Xcode project deployment target
+- macOS 26.4 or later, based on the current Xcode project deployment target
 - Xcode with SwiftUI and Swift Testing support
 
 ## Getting Started
